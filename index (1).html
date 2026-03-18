@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LifeFlow Blood Bank Management System</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --red: #c0392b;
+      --red-deep: #922b21;
+      --red-light: #e74c3c;
+      --red-glow: rgba(192,57,43,0.18);
+      --cream: #fdf6f0;
+      --dark: #1a0a08;
+      --mid: #3d1a15;
+      --text: #2c1a18;
+      --muted: #8c6460;
+      --white: #ffffff;
+      --card-bg: #fff9f7;
+      --border: rgba(192,57,43,0.15);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--cream);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(253,246,240,0.92);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 6vw; height: 68px;
+    }
+    .nav-logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800; font-size: 1.4rem;
+      color: var(--red);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .nav-logo span { color: var(--dark); }
+    .drop { font-size: 1.5rem; }
+    .nav-links { display: flex; gap: 32px; list-style: none; }
+    .nav-links a {
+      text-decoration: none; color: var(--muted);
+      font-size: 0.95rem; font-weight: 500;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--red); }
+    .nav-cta {
+      background: var(--red); color: #fff;
+      border: none; padding: 10px 22px;
+      border-radius: 50px; font-size: 0.9rem;
+      font-weight: 600; cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: background 0.2s, transform 0.15s;
+    }
+    .nav-cta:hover { background: var(--red-deep); transform: translateY(-1px); }
+
+    /* HERO */
+    .hero {
+      min-height: 100vh;
+      display: flex; align-items: center;
+      padding: 120px 6vw 80px;
+      position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; top: -100px; right: -180px;
+      width: 700px; height: 700px;
+      background: radial-gradient(circle, rgba(192,57,43,0.12) 0%, transparent 70%);
+      border-radius: 50%;
+      animation: pulse 4s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.08); opacity: 0.7; }
+    }
+    .hero-content { max-width: 620px; position: relative; z-index: 2; }
+    .hero-tag {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--red-glow); border: 1px solid var(--border);
+      color: var(--red); font-size: 0.82rem; font-weight: 600;
+      padding: 6px 16px; border-radius: 50px;
+      margin-bottom: 28px; letter-spacing: 0.05em;
+      animation: fadeUp 0.7s ease both;
+    }
+    .hero h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(2.8rem, 6vw, 5rem);
+      font-weight: 800; line-height: 1.05;
+      color: var(--dark);
+      animation: fadeUp 0.7s 0.1s ease both;
+    }
+    .hero h1 em { color: var(--red); font-style: normal; }
+    .hero-sub {
+      margin: 22px 0 38px;
+      font-size: 1.1rem; line-height: 1.7;
+      color: var(--muted); max-width: 480px;
+      animation: fadeUp 0.7s 0.2s ease both;
+    }
+    .hero-btns {
+      display: flex; gap: 14px; flex-wrap: wrap;
+      animation: fadeUp 0.7s 0.3s ease both;
+    }
+    .btn-primary {
+      background: var(--red); color: #fff;
+      border: none; padding: 14px 30px;
+      border-radius: 50px; font-size: 1rem;
+      font-weight: 600; cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: all 0.2s; box-shadow: 0 8px 24px rgba(192,57,43,0.3);
+    }
+    .btn-primary:hover { background: var(--red-deep); transform: translateY(-2px); }
+    .btn-outline {
+      background: transparent; color: var(--red);
+      border: 2px solid var(--red); padding: 12px 28px;
+      border-radius: 50px; font-size: 1rem;
+      font-weight: 600; cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: all 0.2s;
+    }
+    .btn-outline:hover { background: var(--red-glow); }
+
+    .hero-visual {
+      position: absolute; right: 6vw; top: 50%;
+      transform: translateY(-50%);
+      display: flex; flex-direction: column; gap: 16px;
+      animation: fadeLeft 0.9s 0.2s ease both;
+      z-index: 2;
+    }
+    @keyframes fadeLeft {
+      from { opacity: 0; transform: translateY(-50%) translateX(40px); }
+      to { opacity: 1; transform: translateY(-50%) translateX(0); }
+    }
+    .stat-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px 26px;
+      box-shadow: 0 4px 20px rgba(192,57,43,0.08);
+      min-width: 200px;
+    }
+    .stat-card .num {
+      font-family: 'Syne', sans-serif;
+      font-size: 2rem; font-weight: 800;
+      color: var(--red);
+    }
+    .stat-card .label { font-size: 0.85rem; color: var(--muted); margin-top: 2px; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* BLOOD TYPES STRIP */
+    .blood-strip {
+      background: var(--dark);
+      padding: 28px 6vw;
+      display: flex; align-items: center; gap: 12px;
+      overflow-x: auto;
+    }
+    .blood-strip-label {
+      font-family: 'Syne', sans-serif;
+      color: var(--muted); font-size: 0.8rem;
+      letter-spacing: 0.1em; white-space: nowrap;
+      margin-right: 8px;
+    }
+    .blood-badge {
+      background: rgba(192,57,43,0.2);
+      border: 1px solid rgba(192,57,43,0.4);
+      color: #fff; font-family: 'Syne', sans-serif;
+      font-weight: 700; font-size: 1rem;
+      padding: 8px 18px; border-radius: 8px;
+      white-space: nowrap; cursor: pointer;
+      transition: background 0.2s;
+    }
+    .blood-badge:hover, .blood-badge.active {
+      background: var(--red);
+    }
+
+    /* SECTIONS */
+    section { padding: 90px 6vw; }
+    .section-label {
+      font-size: 0.8rem; font-weight: 600;
+      letter-spacing: 0.12em; color: var(--red);
+      text-transform: uppercase; margin-bottom: 12px;
+    }
+    .section-title {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 800; color: var(--dark);
+      line-height: 1.15; margin-bottom: 16px;
+    }
+    .section-sub {
+      color: var(--muted); font-size: 1.05rem;
+      line-height: 1.7; max-width: 520px;
+    }
+
+    /* FEATURES */
+    #features { background: var(--white); }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px; margin-top: 52px;
+    }
+    .feature-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px 28px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .feature-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 40px rgba(192,57,43,0.1);
+    }
+    .feature-icon {
+      width: 52px; height: 52px;
+      background: var(--red-glow);
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.6rem; margin-bottom: 20px;
+    }
+    .feature-card h3 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.15rem; font-weight: 700;
+      margin-bottom: 10px; color: var(--dark);
+    }
+    .feature-card p { color: var(--muted); font-size: 0.95rem; line-height: 1.65; }
+
+    /* DASHBOARD PREVIEW */
+    #dashboard { background: var(--dark); }
+    #dashboard .section-title { color: var(--white); }
+    #dashboard .section-sub { color: rgba(255,255,255,0.5); }
+    .dashboard-mock {
+      margin-top: 52px;
+      background: #2a0e0b;
+      border: 1px solid rgba(192,57,43,0.3);
+      border-radius: 24px;
+      padding: 32px;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+    }
+    .dash-top {
+      display: flex; gap: 16px; margin-bottom: 28px; flex-wrap: wrap;
+    }
+    .dash-stat {
+      flex: 1; min-width: 140px;
+      background: rgba(192,57,43,0.15);
+      border: 1px solid rgba(192,57,43,0.25);
+      border-radius: 14px;
+      padding: 20px 22px;
+    }
+    .dash-stat .ds-num {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.8rem; font-weight: 800;
+      color: var(--red-light);
+    }
+    .dash-stat .ds-label { color: rgba(255,255,255,0.5); font-size: 0.82rem; margin-top: 4px; }
+    .dash-table {
+      width: 100%; border-collapse: collapse;
+    }
+    .dash-table th {
+      color: rgba(255,255,255,0.4); font-size: 0.78rem;
+      font-weight: 600; letter-spacing: 0.08em;
+      text-align: left; padding: 10px 14px;
+      border-bottom: 1px solid rgba(192,57,43,0.2);
+    }
+    .dash-table td {
+      padding: 14px 14px; font-size: 0.92rem;
+      color: rgba(255,255,255,0.75);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .badge {
+      display: inline-block; padding: 3px 10px;
+      border-radius: 50px; font-size: 0.78rem; font-weight: 600;
+    }
+    .badge.avail { background: rgba(39,174,96,0.2); color: #2ecc71; }
+    .badge.low { background: rgba(230,126,34,0.2); color: #e67e22; }
+    .badge.crit { background: rgba(192,57,43,0.3); color: var(--red-light); }
+
+    /* HOW IT WORKS */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 24px; margin-top: 52px;
+    }
+    .step {
+      position: relative;
+      padding: 32px 24px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: var(--white);
+    }
+    .step-num {
+      font-family: 'Syne', sans-serif;
+      font-size: 3.5rem; font-weight: 800;
+      color: var(--border);
+      line-height: 1;
+      margin-bottom: 16px;
+    }
+    .step h3 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.1rem; font-weight: 700;
+      margin-bottom: 10px; color: var(--dark);
+    }
+    .step p { color: var(--muted); font-size: 0.92rem; line-height: 1.65; }
+
+    /* REGISTER FORM */
+    #register { background: var(--white); }
+    .form-wrapper {
+      max-width: 680px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 48px 40px;
+      margin-top: 48px;
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+    .form-group { display: flex; flex-direction: column; gap: 7px; }
+    .form-group label {
+      font-size: 0.85rem; font-weight: 600;
+      color: var(--text);
+    }
+    .form-group input,
+    .form-group select {
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      color: var(--text);
+      background: var(--white);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-group input:focus,
+    .form-group select:focus {
+      border-color: var(--red);
+    }
+    .form-submit {
+      margin-top: 8px;
+      width: 100%;
+      background: var(--red); color: #fff;
+      border: none; padding: 15px;
+      border-radius: 12px; font-size: 1rem;
+      font-weight: 600; cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: background 0.2s;
+    }
+    .form-submit:hover { background: var(--red-deep); }
+    .success-msg {
+      display: none;
+      background: rgba(39,174,96,0.1);
+      border: 1px solid rgba(39,174,96,0.3);
+      color: #27ae60;
+      border-radius: 12px;
+      padding: 14px 20px;
+      margin-top: 16px;
+      font-weight: 500;
+      text-align: center;
+    }
+
+    /* FOOTER */
+    footer {
+      background: var(--dark);
+      padding: 60px 6vw 36px;
+    }
+    .footer-top {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 40px; margin-bottom: 48px;
+    }
+    .footer-brand .nav-logo { margin-bottom: 14px; }
+    .footer-brand p { color: rgba(255,255,255,0.4); font-size: 0.9rem; line-height: 1.65; max-width: 280px; }
+    .footer-col h4 {
+      font-family: 'Syne', sans-serif;
+      color: rgba(255,255,255,0.7); font-size: 0.85rem;
+      font-weight: 700; margin-bottom: 18px;
+      letter-spacing: 0.06em;
+    }
+    .footer-col ul { list-style: none; }
+    .footer-col ul li { margin-bottom: 10px; }
+    .footer-col ul a { color: rgba(255,255,255,0.4); text-decoration: none; font-size: 0.88rem; transition: color 0.2s; }
+    .footer-col ul a:hover { color: var(--red-light); }
+    .footer-bottom {
+      border-top: 1px solid rgba(255,255,255,0.07);
+      padding-top: 28px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 10px;
+    }
+    .footer-bottom p { color: rgba(255,255,255,0.25); font-size: 0.82rem; }
+
+    /* MODAL */
+    .modal-overlay {
+      display: none; position: fixed;
+      inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--white);
+      border-radius: 24px;
+      padding: 40px;
+      max-width: 420px; width: 90%;
+      text-align: center;
+      animation: popIn 0.3s ease;
+    }
+    @keyframes popIn {
+      from { transform: scale(0.9); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .modal h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.5rem; font-weight: 800;
+      margin-bottom: 8px; color: var(--dark);
+    }
+    .modal p { color: var(--muted); margin-bottom: 28px; }
+    .modal-close {
+      background: var(--red); color: #fff;
+      border: none; padding: 12px 28px;
+      border-radius: 50px; font-size: 0.95rem;
+      font-weight: 600; cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      .hero-visual { display: none; }
+      .form-row { grid-template-columns: 1fr; }
+      .footer-top { grid-template-columns: 1fr 1fr; }
+      .nav-links { display: none; }
+      .form-wrapper { padding: 28px 20px; }
+    }
+    @media (max-width: 480px) {
+      .footer-top { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo"><span class="drop">🩸</span> Life<span>Flow</span></div>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#dashboard">Dashboard</a></li>
+    <li><a href="#how">How It Works</a></li>
+    <li><a href="#register">Register</a></li>
+  </ul>
+  <button class="nav-cta" onclick="document.getElementById('modal').classList.add('open')">Login</button>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-tag">🩸 Saving Lives, One Drop at a Time</div>
+    <h1>Smart <em>Blood Bank</em> Management System</h1>
+    <p class="hero-sub">A complete platform for managing blood inventory, donor records, requests, and hospital coordination — all in one place.</p>
+    <div class="hero-btns">
+      <button class="btn-primary" onclick="document.getElementById('register').scrollIntoView({behavior:'smooth'})">Register as Donor</button>
+      <button class="btn-outline" onclick="document.getElementById('features').scrollIntoView({behavior:'smooth'})">Explore Features</button>
+    </div>
+  </div>
+  <div class="hero-visual">
+    <div class="stat-card">
+      <div class="num">4,820</div>
+      <div class="label">Units Available</div>
+    </div>
+    <div class="stat-card">
+      <div class="num">1,240</div>
+      <div class="label">Registered Donors</div>
+    </div>
+    <div class="stat-card">
+      <div class="num">38</div>
+      <div class="label">Partner Hospitals</div>
+    </div>
+  </div>
+</section>
+
+<!-- BLOOD TYPES STRIP -->
+<div class="blood-strip">
+  <span class="blood-strip-label">BLOOD TYPES IN STOCK</span>
+  <span class="blood-badge active">A+</span>
+  <span class="blood-badge">A−</span>
+  <span class="blood-badge">B+</span>
+  <span class="blood-badge">B−</span>
+  <span class="blood-badge">AB+</span>
+  <span class="blood-badge">AB−</span>
+  <span class="blood-badge">O+</span>
+  <span class="blood-badge">O−</span>
+</div>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="section-label">Platform Features</div>
+  <div class="section-title">Everything You Need to<br>Manage Blood Supply</div>
+  <p class="section-sub">From donor registration to real-time inventory tracking and emergency requests — LifeFlow handles it all.</p>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">🗄️</div>
+      <h3>Inventory Management</h3>
+      <p>Real-time blood stock tracking by type, unit count, expiry dates, and storage location with automated alerts.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">👤</div>
+      <h3>Donor Registry</h3>
+      <p>Maintain detailed donor profiles including health history, donation frequency, and contact information securely.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🏥</div>
+      <h3>Hospital Coordination</h3>
+      <p>Seamlessly connect hospitals to the blood bank for requests, approvals, and real-time inventory visibility.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🚨</div>
+      <h3>Emergency Requests</h3>
+      <p>Priority-based emergency blood request system with instant notifications and quick dispatch workflows.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📊</div>
+      <h3>Reports & Analytics</h3>
+      <p>Generate detailed reports on donations, usage, expiry, and demand trends to optimize operations.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔔</div>
+      <h3>Smart Alerts</h3>
+      <p>Automated low-stock warnings, expiry notifications, and donor eligibility reminders via SMS or email.</p>
+    </div>
+  </div>
+</section>
+
+<!-- DASHBOARD PREVIEW -->
+<section id="dashboard">
+  <div class="section-label" style="color: rgba(192,57,43,0.8);">Live Dashboard</div>
+  <div class="section-title">Complete Visibility Over<br>Your Blood Bank</div>
+  <p class="section-sub">Monitor every unit, donor, and request from a single powerful dashboard.</p>
+  <div class="dashboard-mock">
+    <div class="dash-top">
+      <div class="dash-stat"><div class="ds-num">842</div><div class="ds-label">O+ Units</div></div>
+      <div class="dash-stat"><div class="ds-num">320</div><div class="ds-label">A+ Units</div></div>
+      <div class="dash-stat"><div class="ds-num">48</div><div class="ds-label">O− Units</div></div>
+      <div class="dash-stat"><div class="ds-num">12</div><div class="ds-label">Pending Requests</div></div>
+    </div>
+    <table class="dash-table">
+      <thead>
+        <tr>
+          <th>BLOOD TYPE</th>
+          <th>UNITS</th>
+          <th>LAST DONATED</th>
+          <th>EXPIRY</th>
+          <th>STATUS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>A+</td><td>320</td><td>Mar 15, 2026</td><td>Apr 14, 2026</td><td><span class="badge avail">Available</span></td></tr>
+        <tr><td>B+</td><td>210</td><td>Mar 16, 2026</td><td>Apr 15, 2026</td><td><span class="badge avail">Available</span></td></tr>
+        <tr><td>AB+</td><td>85</td><td>Mar 10, 2026</td><td>Apr 08, 2026</td><td><span class="badge low">Low</span></td></tr>
+        <tr><td>O−</td><td>48</td><td>Mar 08, 2026</td><td>Apr 06, 2026</td><td><span class="badge crit">Critical</span></td></tr>
+        <tr><td>A−</td><td>30</td><td>Mar 12, 2026</td><td>Apr 10, 2026</td><td><span class="badge crit">Critical</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <div class="section-label">Process</div>
+  <div class="section-title">How It Works</div>
+  <p class="section-sub">A simple, streamlined process connecting donors, blood banks, and hospitals.</p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">01</div>
+      <h3>Donor Registration</h3>
+      <p>Donors register online or at the blood bank with their personal and medical details.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <h3>Screening & Donation</h3>
+      <p>Donors are screened for eligibility. Successful donors contribute blood which is typed and stored.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <h3>Inventory Updated</h3>
+      <p>The blood bank inventory is instantly updated with the new units, expiry tracking enabled.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">04</div>
+      <h3>Hospital Request</h3>
+      <p>Hospitals submit blood requests through the portal. Requests are matched to available inventory.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">05</div>
+      <h3>Dispatch & Delivery</h3>
+      <p>Approved requests are dispatched to hospitals with tracking and receipt confirmation.</p>
+    </div>
+  </div>
+</section>
+
+<!-- REGISTER FORM -->
+<section id="register">
+  <div class="section-label">Join Us</div>
+  <div class="section-title">Register as a Donor</div>
+  <p class="section-sub">Fill in your details below to become a registered donor and help save lives.</p>
+  <div class="form-wrapper">
+    <div class="form-row">
+      <div class="form-group">
+        <label>First Name</label>
+        <input type="text" id="fname" placeholder="Arjun" />
+      </div>
+      <div class="form-group">
+        <label>Last Name</label>
+        <input type="text" id="lname" placeholder="Kumar" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" id="email" placeholder="you@example.com" />
+      </div>
+      <div class="form-group">
+        <label>Phone Number</label>
+        <input type="tel" id="phone" placeholder="+91 9876543210" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Blood Type</label>
+        <select id="bloodtype">
+          <option value="">Select blood type</option>
+          <option>A+</option><option>A−</option>
+          <option>B+</option><option>B−</option>
+          <option>AB+</option><option>AB−</option>
+          <option>O+</option><option>O−</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Date of Birth</label>
+        <input type="date" id="dob" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>City</label>
+        <input type="text" id="city" placeholder="Chennai" />
+      </div>
+      <div class="form-group">
+        <label>Last Donation Date (if any)</label>
+        <input type="date" id="lastdonation" />
+      </div>
+    </div>
+    <button class="form-submit" onclick="submitForm()">Submit Registration</button>
+    <div class="success-msg" id="successMsg">✅ Registration successful! Thank you for signing up as a donor.</div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-top">
+    <div class="footer-brand">
+      <div class="nav-logo" style="color:var(--red)">🩸 Life<span style="color:rgba(255,255,255,0.7)">Flow</span></div>
+      <p>A complete blood bank management system built to bridge the gap between donors and those in need.</p>
+    </div>
+    <div class="footer-col">
+      <h4>PLATFORM</h4>
+      <ul>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#dashboard">Dashboard</a></li>
+        <li><a href="#how">How It Works</a></li>
+        <li><a href="#register">Register</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>RESOURCES</h4>
+      <ul>
+        <li><a href="#">Documentation</a></li>
+        <li><a href="#">API Reference</a></li>
+        <li><a href="#">Support</a></li>
+        <li><a href="#">FAQs</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>CONTACT</h4>
+      <ul>
+        <li><a href="#">About Us</a></li>
+        <li><a href="#">Partner Hospitals</a></li>
+        <li><a href="#">Emergency Line</a></li>
+        <li><a href="#">Privacy Policy</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2026 LifeFlow Blood Bank Management System. All rights reserved.</p>
+    <p style="color:rgba(255,255,255,0.15)">Built to save lives 🩸</p>
+  </div>
+</footer>
+
+<!-- LOGIN MODAL -->
+<div class="modal-overlay" id="modal" onclick="if(event.target===this) this.classList.remove('open')">
+  <div class="modal">
+    <h2>🩸 Login to LifeFlow</h2>
+    <p>Enter your credentials to access the blood bank management portal.</p>
+    <div class="form-group" style="margin-bottom:14px;text-align:left">
+      <label>Email</label>
+      <input type="email" placeholder="admin@lifeflow.in" style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:12px 16px;font-family:'DM Sans',sans-serif;font-size:0.95rem;outline:none"/>
+    </div>
+    <div class="form-group" style="margin-bottom:24px;text-align:left">
+      <label>Password</label>
+      <input type="password" placeholder="••••••••" style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:12px 16px;font-family:'DM Sans',sans-serif;font-size:0.95rem;outline:none"/>
+    </div>
+    <button class="modal-close" onclick="document.getElementById('modal').classList.remove('open')">Login</button>
+  </div>
+</div>
+
+<script>
+  // Blood type badge toggle
+  document.querySelectorAll('.blood-badge').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.blood-badge').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+    });
+  });
+
+  // Form submit
+  function submitForm() {
+    const fname = document.getElementById('fname').value;
+    const email = document.getElementById('email').value;
+    const blood = document.getElementById('bloodtype').value;
+    if (!fname || !email || !blood) {
+      alert('Please fill in at least your name, email, and blood type.');
+      return;
+    }
+    document.getElementById('successMsg').style.display = 'block';
+    setTimeout(() => {
+      document.getElementById('successMsg').style.display = 'none';
+    }, 5000);
+  }
+</script>
+
+</body>
+</html>
