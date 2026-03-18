@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Reports - LifeFlow</title>
+  <link rel="stylesheet" href="../css/style.css"/>
+</head>
+<body>
+<nav>
+  <a href="../index.html" class="nav-logo">🩸 Life<span>Flow</span></a>
+  <ul class="nav-links">
+    <li><a href="../index.html">Home</a></li>
+    <li><a href="inventory.html">Inventory</a></li>
+    <li><a href="donors.html">Donors</a></li>
+    <li><a href="requests.html">Requests</a></li>
+    <li><a href="hospitals.html">Hospitals</a></li>
+    <li><a href="reports.html" class="active">Reports</a></li>
+  </ul>
+  <button class="nav-hamburger"><span></span><span></span><span></span></button>
+  <a href="login.html" class="nav-cta">Admin Login</a>
+</nav>
+
+<div class="page-content">
+<div class="page-header">
+  <div class="section-label">Analytics</div>
+  <div class="section-title">Reports & Insights</div>
+  <p class="section-sub">Comprehensive reports on blood inventory, donations, and hospital requests.</p>
+</div>
+
+<section>
+  <!-- KPI Cards -->
+  <div class="stats-row" id="kpiCards"></div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-bottom:28px">
+    <!-- Blood Type Distribution -->
+    <div class="card">
+      <h3 style="font-family:Syne,sans-serif;font-weight:700;margin-bottom:20px">Blood Type Inventory</h3>
+      <div id="bloodChart"></div>
+    </div>
+    <!-- Request Status -->
+    <div class="card">
+      <h3 style="font-family:Syne,sans-serif;font-weight:700;margin-bottom:20px">Request Status Overview</h3>
+      <div id="reqChart"></div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-bottom:28px">
+    <!-- Critical Alerts -->
+    <div class="card">
+      <h3 style="font-family:Syne,sans-serif;font-weight:700;margin-bottom:20px">⚠️ Critical Alerts</h3>
+      <div id="alertsList"></div>
+    </div>
+    <!-- Top Donors -->
+    <div class="card">
+      <h3 style="font-family:Syne,sans-serif;font-weight:700;margin-bottom:20px">🏆 Top Donors</h3>
+      <div id="topDonors"></div>
+    </div>
+  </div>
+
+  <!-- Full inventory report -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+      <h3 style="font-family:Syne,sans-serif;font-weight:700">Full Inventory Report</h3>
+      <button class="btn-outline" onclick="printReport()" style="font-size:0.85rem;padding:9px 18px">🖨️ Print Report</button>
+    </div>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th>Blood Type</th><th>Units</th><th>Status</th><th>Expiry</th><th>Days Left</th><th>Location</th></tr>
+        </thead>
+        <tbody id="reportBody"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+</div>
+
+<footer>
+  <div class="footer-bottom" style="border-top:none;padding-top:0">
+    <p>© 2026 LifeFlow Blood Bank Management System</p><p>🩸</p>
+  </div>
+</footer>
+
+<script src="../js/main.js"></script>
+<script>
+function renderReports() {
+  const inv = DB.get('inventory');
+  const donors = DB.get('donors');
+  const requests = DB.get('requests');
+  const hospitals = DB.get('hospitals');
+  const totalUnits = inv.reduce((s,i)=>s+i.units,0);
+
+  // KPIs
+  document.getElementById('kpiCards').innerHTML = `
+    <div class="stat-box"><div class="snum">${totalUnits}</div><div class="slbl">Total Units in Stock</div></div>
+    <div class="stat-box"><div class="snum">${donors.length}</div><div class="slbl">Registered Donors</div></div>
+    <div class="stat-box"><div class="snum">${requests.length}</div><div class="slbl">Total Requests</div></div>
+    <div class="stat-box"><div class="snum" style="color:var(--success)">${donors.reduce((s,d)=>s+(d.donations||0),0)}</div><div class="slbl">Total Donations</div></div>
+    <div class="stat-box"><div class="snum" style="color:var(--warning)">${requests.filter(r=>r.status==='Pending').length}</div><div class="slbl">Pending Requests</div></div>
+    <div class="stat-box"><div class="snum" style="color:var(--red)">${inv.filter(i=>i.status==='Critical').length}</div><div class="slbl">Critical Stock Types</div></div>
+  `;
+
+  // Blood chart (bar)
+  const maxUnits = Math.max(...inv.map(i=>i.units));
+  const colors = { Available:'#27ae60', Low:'#e67e22', Critical:'#c0392b' };
+  document.getElementById('bloodChart').innerHTML = inv.map(i => `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+      <div style="width:40px;font-family:Syne,sans-serif;font-weight:700;font-size:0.95rem;color:var(--dark)">${i.type}</div>
+      <div style="flex:1">
+        <div class="progress-bar" style="height:10px">
+          <div style="height:100%;width:${Math.round(i.units/maxUnits*100)}%;background:${colors[i.status]};border-radius:50px;transition:width 0.5s"></div>
+        </div>
+      </div>
+      <div style="width:50px;text-align:right;font-weight:600;font-size:0.9rem">${i.units}</div>
+    </div>`).join('');
+
+  // Request status chart
+  const statuses = ['Pending','Approved','Dispatched','Rejected'];
+  const sc = { Pending:'#e67e22', Approved:'#27ae60', Dispatched:'#2980b9', Rejected:'#c0392b' };
+  document.getElementById('reqChart').innerHTML = statuses.map(s => {
+    const count = requests.filter(r=>r.status===s).length;
+    const pct = requests.length ? Math.round(count/requests.length*100) : 0;
+    return `<div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+        <span style="font-size:0.88rem;font-weight:500">${s}</span>
+        <span style="font-size:0.88rem;color:var(--muted)">${count} (${pct}%)</span>
+      </div>
+      <div class="progress-bar" style="height:10px">
+        <div style="height:100%;width:${pct}%;background:${sc[s]};border-radius:50px;transition:width 0.5s"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Critical alerts
+  const criticals = inv.filter(i=>i.status==='Critical'||i.status==='Low');
+  const expiringSoon = inv.filter(i=>daysUntil(i.expiry)<=7);
+  const allAlerts = [
+    ...criticals.map(i=>`🔴 <strong>${i.type}</strong> — Only <strong>${i.units} units</strong> remaining (${i.status})`),
+    ...expiringSoon.map(i=>`⏰ <strong>${i.type}</strong> — Expires in <strong>${daysUntil(i.expiry)} days</strong> on ${formatDate(i.expiry)}`)
+  ];
+  document.getElementById('alertsList').innerHTML = allAlerts.length
+    ? allAlerts.map(a=>`<div style="padding:12px;border-radius:10px;background:rgba(192,57,43,0.07);border:1px solid rgba(192,57,43,0.15);margin-bottom:8px;font-size:0.88rem">${a}</div>`).join('')
+    : '<p style="color:var(--success);font-weight:500">✅ No critical alerts right now.</p>';
+
+  // Top donors
+  const sorted = [...donors].sort((a,b)=>(b.donations||0)-(a.donations||0)).slice(0,5);
+  document.getElementById('topDonors').innerHTML = sorted.map((d,i)=>`
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)">
+      <div style="width:28px;height:28px;background:var(--red-glow);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.82rem;color:var(--red)">${i+1}</div>
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:0.9rem">${d.name}</div>
+        <div style="font-size:0.78rem;color:var(--muted)">${d.blood} · ${d.city||'—'}</div>
+      </div>
+      <div style="font-family:Syne,sans-serif;font-weight:700;color:var(--red)">${d.donations||0}</div>
+    </div>`).join('');
+
+  // Full report table
+  const sc2 = { Available:'badge-avail', Low:'badge-low', Critical:'badge-crit' };
+  document.getElementById('reportBody').innerHTML = inv.map(i => {
+    const days = daysUntil(i.expiry);
+    return `<tr>
+      <td><strong style="font-family:Syne,sans-serif;font-size:1.05rem">${i.type}</strong></td>
+      <td><strong>${i.units}</strong></td>
+      <td><span class="badge ${sc2[i.status]}">${i.status}</span></td>
+      <td>${formatDate(i.expiry)}</td>
+      <td style="color:${days<7?'var(--red)':days<14?'var(--warning)':'var(--success)'};font-weight:600">${days}d</td>
+      <td>${i.location||'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function printReport() {
+  window.print();
+}
+
+renderReports();
+</script>
+</body>
+</html>

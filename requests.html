@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Requests - LifeFlow</title>
+  <link rel="stylesheet" href="../css/style.css"/>
+</head>
+<body>
+<nav>
+  <a href="../index.html" class="nav-logo">🩸 Life<span>Flow</span></a>
+  <ul class="nav-links">
+    <li><a href="../index.html">Home</a></li>
+    <li><a href="inventory.html">Inventory</a></li>
+    <li><a href="donors.html">Donors</a></li>
+    <li><a href="requests.html" class="active">Requests</a></li>
+    <li><a href="hospitals.html">Hospitals</a></li>
+    <li><a href="reports.html">Reports</a></li>
+  </ul>
+  <button class="nav-hamburger"><span></span><span></span><span></span></button>
+  <a href="login.html" class="nav-cta">Admin Login</a>
+</nav>
+
+<div class="page-content">
+<div class="page-header">
+  <div class="section-label">Hospital Requests</div>
+  <div class="section-title">Blood Request Management</div>
+  <p class="section-sub">Track, approve, and dispatch blood requests from partner hospitals.</p>
+</div>
+
+<section>
+  <div class="stats-row" id="reqStats"></div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;flex-wrap:wrap;gap:12px">
+    <div class="search-bar" style="margin:0">
+      <input type="text" placeholder="Search hospital or blood type..." id="reqSearch" oninput="renderRequests()"/>
+      <select id="reqStatus" onchange="renderRequests()">
+        <option value="">All Status</option>
+        <option>Pending</option><option>Approved</option><option>Dispatched</option><option>Rejected</option>
+      </select>
+      <select id="reqPriority" onchange="renderRequests()">
+        <option value="">All Priority</option>
+        <option>Emergency</option><option>Urgent</option><option>Normal</option>
+      </select>
+    </div>
+    <button class="btn-primary" onclick="openModal('addReqModal')">+ New Request</button>
+  </div>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr><th>Hospital</th><th>Blood Type</th><th>Units</th><th>Priority</th><th>Date</th><th>Contact</th><th>Status</th><th>Actions</th></tr>
+      </thead>
+      <tbody id="reqBody"></tbody>
+    </table>
+  </div>
+  <div id="reqAlert" class="alert"></div>
+</section>
+</div>
+
+<!-- ADD REQUEST MODAL -->
+<div class="modal-overlay" id="addReqModal">
+  <div class="modal">
+    <button class="modal-close-btn" onclick="closeModal('addReqModal')">✕</button>
+    <h2 style="font-family:Syne,sans-serif;font-weight:800;margin-bottom:22px">New Blood Request</h2>
+    <div class="form-group"><label>Hospital Name *</label><input type="text" id="r_hosp" placeholder="Apollo Hospital"/></div>
+    <div class="form-row">
+      <div class="form-group"><label>Blood Type *</label>
+        <select id="r_blood"><option value="">Select</option>
+          <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+          <option>AB+</option><option>AB-</option><option>O+</option><option>O-</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Units Required *</label><input type="number" id="r_units" placeholder="5" min="1"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Priority *</label>
+        <select id="r_priority"><option>Normal</option><option>Urgent</option><option>Emergency</option></select>
+      </div>
+      <div class="form-group"><label>Request Date</label><input type="date" id="r_date"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Contact Person</label><input type="text" id="r_contact" placeholder="Dr. Name"/></div>
+      <div class="form-group"><label>Phone</label><input type="tel" id="r_phone" placeholder="9876543210"/></div>
+    </div>
+    <button class="btn-primary" style="width:100%;margin-top:4px" onclick="addRequest()">Submit Request</button>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-bottom" style="border-top:none;padding-top:0">
+    <p>© 2026 LifeFlow Blood Bank Management System</p><p>🩸</p>
+  </div>
+</footer>
+
+<script src="../js/main.js"></script>
+<script>
+function renderRequests() {
+  const search = document.getElementById('reqSearch').value.toLowerCase();
+  const status = document.getElementById('reqStatus').value;
+  const priority = document.getElementById('reqPriority').value;
+  let data = DB.get('requests');
+  if (search) data = data.filter(r => r.hospital.toLowerCase().includes(search) || r.blood.toLowerCase().includes(search));
+  if (status) data = data.filter(r => r.status === status);
+  if (priority) data = data.filter(r => r.priority === priority);
+
+  const sc = { Pending:'badge-low', Approved:'badge-avail', Dispatched:'badge-blue', Rejected:'badge-crit' };
+  const pc = { Emergency:'badge-crit', Urgent:'badge-low', Normal:'badge-avail' };
+
+  document.getElementById('reqBody').innerHTML = data.map(r => `<tr>
+    <td><strong>${r.hospital}</strong></td>
+    <td><span style="font-family:Syne,sans-serif;font-weight:700;font-size:1.05rem;color:var(--red)">${r.blood}</span></td>
+    <td><strong>${r.units}</strong></td>
+    <td><span class="badge ${pc[r.priority]}">${r.priority}</span></td>
+    <td>${formatDate(r.date)}</td>
+    <td>${r.contact||'—'}<br><span style="font-size:0.8rem;color:var(--muted)">${r.phone||''}</span></td>
+    <td><span class="badge ${sc[r.status]}">${r.status}</span></td>
+    <td style="white-space:nowrap">
+      ${r.status==='Pending' ? `
+        <button onclick="updateReqStatus(${r.id},'Approved')" style="background:rgba(39,174,96,0.1);border:1px solid rgba(39,174,96,0.3);padding:5px 10px;border-radius:8px;cursor:pointer;font-size:0.8rem;color:var(--success);margin-right:4px">✓ Approve</button>
+        <button onclick="updateReqStatus(${r.id},'Rejected')" style="background:rgba(192,57,43,0.1);border:1px solid rgba(192,57,43,0.3);padding:5px 10px;border-radius:8px;cursor:pointer;font-size:0.8rem;color:var(--red)">✗ Reject</button>
+      ` : r.status==='Approved' ? `
+        <button onclick="updateReqStatus(${r.id},'Dispatched')" style="background:rgba(52,152,219,0.1);border:1px solid rgba(52,152,219,0.3);padding:5px 10px;border-radius:8px;cursor:pointer;font-size:0.8rem;color:#2980b9">🚚 Dispatch</button>
+      ` : `<span style="color:var(--muted);font-size:0.85rem">${r.status}</span>`}
+    </td>
+  </tr>`).join('') || '<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--muted)">No requests found</td></tr>';
+
+  const all = DB.get('requests');
+  document.getElementById('reqStats').innerHTML = `
+    <div class="stat-box"><div class="snum">${all.length}</div><div class="slbl">Total Requests</div></div>
+    <div class="stat-box"><div class="snum" style="color:var(--warning)">${all.filter(r=>r.status==='Pending').length}</div><div class="slbl">Pending</div></div>
+    <div class="stat-box"><div class="snum" style="color:var(--success)">${all.filter(r=>r.status==='Approved').length}</div><div class="slbl">Approved</div></div>
+    <div class="stat-box"><div class="snum" style="color:var(--red)">${all.filter(r=>r.priority==='Emergency').length}</div><div class="slbl">Emergency</div></div>
+    <div class="stat-box"><div class="snum" style="color:#2980b9">${all.filter(r=>r.status==='Dispatched').length}</div><div class="slbl">Dispatched</div></div>
+  `;
+}
+
+function addRequest() {
+  const hosp = document.getElementById('r_hosp').value.trim();
+  const blood = document.getElementById('r_blood').value;
+  const units = parseInt(document.getElementById('r_units').value);
+  if (!hosp || !blood || !units) { showAlert('reqAlert','error','Hospital, blood type and units are required.'); return; }
+  DB.push('requests', {
+    hospital: hosp, blood, units,
+    priority: document.getElementById('r_priority').value,
+    date: document.getElementById('r_date').value || new Date().toISOString().split('T')[0],
+    contact: document.getElementById('r_contact').value,
+    phone: document.getElementById('r_phone').value,
+    status: 'Pending'
+  });
+  closeModal('addReqModal');
+  showAlert('reqAlert','success','✅ Request submitted successfully!');
+  renderRequests();
+}
+
+function updateReqStatus(id, status) {
+  DB.update('requests', id, { status });
+  showAlert('reqAlert','success',`Request ${status.toLowerCase()}!`);
+  renderRequests();
+}
+
+renderRequests();
+</script>
+</body>
+</html>

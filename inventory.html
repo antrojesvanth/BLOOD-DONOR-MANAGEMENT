@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Inventory - LifeFlow</title>
+  <link rel="stylesheet" href="../css/style.css"/>
+</head>
+<body>
+<nav>
+  <a href="../index.html" class="nav-logo">🩸 Life<span>Flow</span></a>
+  <ul class="nav-links">
+    <li><a href="../index.html">Home</a></li>
+    <li><a href="inventory.html" class="active">Inventory</a></li>
+    <li><a href="donors.html">Donors</a></li>
+    <li><a href="requests.html">Requests</a></li>
+    <li><a href="hospitals.html">Hospitals</a></li>
+    <li><a href="reports.html">Reports</a></li>
+  </ul>
+  <button class="nav-hamburger"><span></span><span></span><span></span></button>
+  <a href="login.html" class="nav-cta">Admin Login</a>
+</nav>
+
+<div class="page-content">
+<div class="page-header">
+  <div class="section-label">Blood Bank</div>
+  <div class="section-title">Blood Inventory</div>
+  <p class="section-sub">Monitor and manage all blood units by type, quantity, and expiry status.</p>
+</div>
+
+<section>
+  <!-- Stats -->
+  <div class="stats-row" id="invStats"></div>
+
+  <!-- Controls -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;flex-wrap:wrap;gap:12px">
+    <div class="search-bar" style="margin:0">
+      <input type="text" placeholder="Search blood type or location..." id="invSearch" oninput="renderInventory()"/>
+      <select id="invFilter" onchange="renderInventory()">
+        <option value="">All Status</option>
+        <option>Available</option><option>Low</option><option>Critical</option>
+      </select>
+    </div>
+    <button class="btn-primary" onclick="openModal('addInvModal')">+ Add Stock</button>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Blood Type</th><th>Units</th><th>Stock Level</th>
+          <th>Collected</th><th>Expiry</th><th>Days Left</th>
+          <th>Location</th><th>Status</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="invBody"></tbody>
+    </table>
+  </div>
+  <div id="invAlert" class="alert"></div>
+</section>
+</div>
+
+<!-- ADD INVENTORY MODAL -->
+<div class="modal-overlay" id="addInvModal">
+  <div class="modal">
+    <button class="modal-close-btn" onclick="closeModal('addInvModal')">✕</button>
+    <h2 style="font-family:Syne,sans-serif;font-weight:800;margin-bottom:6px">Add Blood Stock</h2>
+    <p style="color:var(--muted);margin-bottom:22px;font-size:0.9rem">Record new blood units into the inventory.</p>
+    <div class="form-group">
+      <label>Blood Type *</label>
+      <select id="add_type">
+        <option value="">Select</option>
+        <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+        <option>AB+</option><option>AB-</option><option>O+</option><option>O-</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Units *</label><input type="number" id="add_units" placeholder="50" min="1"/></div>
+      <div class="form-group"><label>Location</label><input type="text" id="add_loc" placeholder="Store A"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Collection Date</label><input type="date" id="add_collected"/></div>
+      <div class="form-group"><label>Expiry Date</label><input type="date" id="add_expiry"/></div>
+    </div>
+    <button class="btn-primary" style="width:100%;margin-top:6px" onclick="addInventory()">Add to Inventory</button>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="editInvModal">
+  <div class="modal">
+    <button class="modal-close-btn" onclick="closeModal('editInvModal')">✕</button>
+    <h2 style="font-family:Syne,sans-serif;font-weight:800;margin-bottom:6px">Update Stock</h2>
+    <input type="hidden" id="edit_id"/>
+    <div class="form-group"><label>Units</label><input type="number" id="edit_units"/></div>
+    <div class="form-group"><label>Status</label>
+      <select id="edit_status"><option>Available</option><option>Low</option><option>Critical</option></select>
+    </div>
+    <div class="form-group"><label>Location</label><input type="text" id="edit_loc"/></div>
+    <button class="btn-primary" style="width:100%;margin-top:6px" onclick="updateInventory()">Save Changes</button>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-bottom" style="border-top:none;padding-top:0">
+    <p>© 2026 LifeFlow Blood Bank Management System</p>
+    <p>🩸 Saving Lives</p>
+  </div>
+</footer>
+
+<script src="../js/main.js"></script>
+<script>
+function getStatus(units) {
+  if (units >= 100) return 'Available';
+  if (units >= 30) return 'Low';
+  return 'Critical';
+}
+
+function renderInventory() {
+  const search = document.getElementById('invSearch').value.toLowerCase();
+  const filter = document.getElementById('invFilter').value;
+  let data = DB.get('inventory');
+  if (search) data = data.filter(i => i.type.toLowerCase().includes(search) || (i.location||'').toLowerCase().includes(search));
+  if (filter) data = data.filter(i => i.status === filter);
+
+  const colors = { Available:'badge-avail', Low:'badge-low', Critical:'badge-crit' };
+  const body = document.getElementById('invBody');
+  body.innerHTML = data.map(i => {
+    const days = daysUntil(i.expiry);
+    const dayColor = days < 7 ? 'color:var(--red)' : days < 14 ? 'color:var(--warning)' : '';
+    const pct = Math.min(100, Math.round(i.units / 10));
+    const pClass = i.units >= 100 ? 'ok' : i.units >= 30 ? 'warn' : '';
+    return `<tr>
+      <td><strong style="font-family:Syne,sans-serif;font-size:1.05rem">${i.type}</strong></td>
+      <td><strong>${i.units}</strong></td>
+      <td style="min-width:120px">
+        <div style="margin-bottom:4px;font-size:0.8rem;color:var(--muted)">${pct}%</div>
+        <div class="progress-bar"><div class="progress-fill ${pClass}" style="width:${pct}%"></div></div>
+      </td>
+      <td>${formatDate(i.collected)}</td>
+      <td>${formatDate(i.expiry)}</td>
+      <td style="${dayColor};font-weight:600">${days}d</td>
+      <td>${i.location||'—'}</td>
+      <td><span class="badge ${colors[i.status]}">${i.status}</span></td>
+      <td>
+        <button onclick="editInv(${i.id})" style="background:none;border:1px solid var(--border);padding:5px 12px;border-radius:8px;cursor:pointer;font-size:0.82rem;margin-right:6px">Edit</button>
+        <button onclick="deleteInv(${i.id})" style="background:none;border:1px solid rgba(192,57,43,0.3);padding:5px 12px;border-radius:8px;cursor:pointer;font-size:0.82rem;color:var(--red)">Del</button>
+      </td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--muted)">No records found</td></tr>';
+
+  // Stats
+  const all = DB.get('inventory');
+  document.getElementById('invStats').innerHTML = `
+    <div class="stat-box"><div class="snum">${all.reduce((s,i)=>s+i.units,0)}</div><div class="slbl">Total Units</div></div>
+    <div class="stat-box"><div class="snum" style="color:var(--success)">${all.filter(i=>i.status==='Available').length}</div><div class="slbl">Types Available</div></div>
+    <div class="stat-box"><div class="snum" style="color:var(--warning)">${all.filter(i=>i.status==='Low').length}</div><div class="slbl">Types Low</div></div>
+    <div class="stat-box"><div class="snum" style="color:var(--red)">${all.filter(i=>i.status==='Critical').length}</div><div class="slbl">Types Critical</div></div>
+  `;
+}
+
+function addInventory() {
+  const type = document.getElementById('add_type').value;
+  const units = parseInt(document.getElementById('add_units').value);
+  if (!type || !units) { showAlert('invAlert','error','Blood type and units are required.'); return; }
+  DB.push('inventory', {
+    type, units,
+    location: document.getElementById('add_loc').value || 'Store A',
+    collected: document.getElementById('add_collected').value || new Date().toISOString().split('T')[0],
+    expiry: document.getElementById('add_expiry').value,
+    status: getStatus(units)
+  });
+  closeModal('addInvModal');
+  showAlert('invAlert','success','✅ Stock added successfully!');
+  renderInventory();
+}
+
+function editInv(id) {
+  const item = DB.get('inventory').find(i=>i.id===id);
+  document.getElementById('edit_id').value = id;
+  document.getElementById('edit_units').value = item.units;
+  document.getElementById('edit_status').value = item.status;
+  document.getElementById('edit_loc').value = item.location;
+  openModal('editInvModal');
+}
+
+function updateInventory() {
+  const id = parseInt(document.getElementById('edit_id').value);
+  const units = parseInt(document.getElementById('edit_units').value);
+  DB.update('inventory', id, {
+    units, status: document.getElementById('edit_status').value,
+    location: document.getElementById('edit_loc').value
+  });
+  closeModal('editInvModal');
+  showAlert('invAlert','success','✅ Stock updated!');
+  renderInventory();
+}
+
+function deleteInv(id) {
+  if (!confirm('Delete this inventory record?')) return;
+  DB.remove('inventory', id);
+  showAlert('invAlert','success','Record deleted.');
+  renderInventory();
+}
+
+renderInventory();
+</script>
+</body>
+</html>

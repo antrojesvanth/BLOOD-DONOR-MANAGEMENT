@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Hospitals - LifeFlow</title>
+  <link rel="stylesheet" href="../css/style.css"/>
+</head>
+<body>
+<nav>
+  <a href="../index.html" class="nav-logo">🩸 Life<span>Flow</span></a>
+  <ul class="nav-links">
+    <li><a href="../index.html">Home</a></li>
+    <li><a href="inventory.html">Inventory</a></li>
+    <li><a href="donors.html">Donors</a></li>
+    <li><a href="requests.html">Requests</a></li>
+    <li><a href="hospitals.html" class="active">Hospitals</a></li>
+    <li><a href="reports.html">Reports</a></li>
+  </ul>
+  <button class="nav-hamburger"><span></span><span></span><span></span></button>
+  <a href="login.html" class="nav-cta">Admin Login</a>
+</nav>
+
+<div class="page-content">
+<div class="page-header">
+  <div class="section-label">Partners</div>
+  <div class="section-title">Hospital Network</div>
+  <p class="section-sub">Manage all partner hospitals connected to the LifeFlow blood bank system.</p>
+</div>
+
+<section>
+  <div class="stats-row" id="hospStats"></div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;flex-wrap:wrap;gap:12px">
+    <div class="search-bar" style="margin:0">
+      <input type="text" placeholder="Search hospital or city..." id="hospSearch" oninput="renderHospitals()"/>
+      <select id="hospStatusFilter" onchange="renderHospitals()">
+        <option value="">All Status</option>
+        <option>Active</option><option>Inactive</option>
+      </select>
+    </div>
+    <button class="btn-primary" onclick="openModal('addHospModal')">+ Add Hospital</button>
+  </div>
+
+  <!-- Cards view -->
+  <div id="hospGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px"></div>
+  <div id="hospAlert" class="alert"></div>
+</section>
+</div>
+
+<!-- ADD HOSPITAL MODAL -->
+<div class="modal-overlay" id="addHospModal">
+  <div class="modal">
+    <button class="modal-close-btn" onclick="closeModal('addHospModal')">✕</button>
+    <h2 style="font-family:Syne,sans-serif;font-weight:800;margin-bottom:22px">Add Partner Hospital</h2>
+    <div class="form-group"><label>Hospital Name *</label><input type="text" id="h_name" placeholder="Apollo Hospital"/></div>
+    <div class="form-row">
+      <div class="form-group"><label>City *</label><input type="text" id="h_city" placeholder="Chennai"/></div>
+      <div class="form-group"><label>Type</label>
+        <select id="h_type">
+          <option>Multi-Specialty</option><option>Super Specialty</option>
+          <option>General</option><option>Orthopedic</option><option>Pediatric</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Contact Person</label><input type="text" id="h_contact" placeholder="Dr. Name"/></div>
+      <div class="form-group"><label>Phone</label><input type="tel" id="h_phone" placeholder="044-12345678"/></div>
+    </div>
+    <div class="form-group"><label>Email</label><input type="email" id="h_email" placeholder="hospital@email.com"/></div>
+    <button class="btn-primary" style="width:100%;margin-top:4px" onclick="addHospital()">Add Hospital</button>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-bottom" style="border-top:none;padding-top:0">
+    <p>© 2026 LifeFlow Blood Bank Management System</p><p>🩸</p>
+  </div>
+</footer>
+
+<script src="../js/main.js"></script>
+<script>
+function renderHospitals() {
+  const search = document.getElementById('hospSearch').value.toLowerCase();
+  const status = document.getElementById('hospStatusFilter').value;
+  let data = DB.get('hospitals');
+  if (search) data = data.filter(h => h.name.toLowerCase().includes(search) || (h.city||'').toLowerCase().includes(search));
+  if (status) data = data.filter(h => h.status === status);
+
+  const requests = DB.get('requests');
+  document.getElementById('hospGrid').innerHTML = data.map(h => {
+    const hReqs = requests.filter(r => r.hospital === h.name);
+    const pending = hReqs.filter(r => r.status === 'Pending').length;
+    return `<div class="card" style="position:relative">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px">
+        <div>
+          <h3 style="font-family:Syne,sans-serif;font-weight:700;font-size:1.05rem;margin-bottom:4px">${h.name}</h3>
+          <span class="badge ${h.status==='Active'?'badge-avail':'badge-crit'}">${h.status}</span>
+        </div>
+        <div style="font-size:1.8rem">🏥</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+        <div style="background:var(--card-bg);border-radius:10px;padding:12px">
+          <div style="font-size:0.72rem;color:var(--muted)">CITY</div>
+          <strong style="font-size:0.9rem">${h.city||'—'}</strong>
+        </div>
+        <div style="background:var(--card-bg);border-radius:10px;padding:12px">
+          <div style="font-size:0.72rem;color:var(--muted)">TYPE</div>
+          <strong style="font-size:0.9rem">${h.type||'—'}</strong>
+        </div>
+        <div style="background:var(--card-bg);border-radius:10px;padding:12px">
+          <div style="font-size:0.72rem;color:var(--muted)">CONTACT</div>
+          <strong style="font-size:0.9rem">${h.contact||'—'}</strong>
+        </div>
+        <div style="background:var(--card-bg);border-radius:10px;padding:12px">
+          <div style="font-size:0.72rem;color:var(--muted)">REQUESTS</div>
+          <strong style="font-size:0.9rem">${hReqs.length} total</strong>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;font-size:0.85rem;color:var(--muted)">
+        <span>📞 ${h.phone||'—'}</span>
+        <div>
+          ${pending ? `<span class="badge badge-low" style="margin-right:6px">${pending} pending</span>` : ''}
+          <button onclick="toggleStatus(${h.id})" style="background:none;border:1px solid var(--border);padding:5px 12px;border-radius:8px;cursor:pointer;font-size:0.8rem;margin-right:4px">${h.status==='Active'?'Deactivate':'Activate'}</button>
+          <button onclick="deleteHosp(${h.id})" style="background:none;border:1px solid rgba(192,57,43,0.3);padding:5px 12px;border-radius:8px;cursor:pointer;font-size:0.8rem;color:var(--red)">Del</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('') || '<p style="color:var(--muted);text-align:center;padding:40px">No hospitals found</p>';
+
+  const all = DB.get('hospitals');
+  document.getElementById('hospStats').innerHTML = `
+    <div class="stat-box"><div class="snum">${all.length}</div><div class="slbl">Total Hospitals</div></div>
+    <div class="stat-box"><div class="snum" style="color:var(--success)">${all.filter(h=>h.status==='Active').length}</div><div class="slbl">Active Partners</div></div>
+    <div class="stat-box"><div class="snum" style="color:var(--muted)">${all.filter(h=>h.status==='Inactive').length}</div><div class="slbl">Inactive</div></div>
+    <div class="stat-box"><div class="snum">${DB.get('requests').length}</div><div class="slbl">Total Requests</div></div>
+  `;
+}
+
+function addHospital() {
+  const name = document.getElementById('h_name').value.trim();
+  const city = document.getElementById('h_city').value.trim();
+  if (!name || !city) { showAlert('hospAlert','error','Hospital name and city are required.'); return; }
+  DB.push('hospitals', {
+    name, city, type: document.getElementById('h_type').value,
+    contact: document.getElementById('h_contact').value,
+    phone: document.getElementById('h_phone').value,
+    email: document.getElementById('h_email').value,
+    status: 'Active'
+  });
+  closeModal('addHospModal');
+  showAlert('hospAlert','success','✅ Hospital added successfully!');
+  renderHospitals();
+}
+
+function toggleStatus(id) {
+  const h = DB.get('hospitals').find(x=>x.id===id);
+  DB.update('hospitals', id, { status: h.status==='Active' ? 'Inactive' : 'Active' });
+  renderHospitals();
+}
+
+function deleteHosp(id) {
+  if (!confirm('Remove this hospital?')) return;
+  DB.remove('hospitals', id);
+  showAlert('hospAlert','success','Hospital removed.');
+  renderHospitals();
+}
+
+renderHospitals();
+</script>
+</body>
+</html>

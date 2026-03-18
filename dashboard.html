@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard - LifeFlow Admin</title>
+  <link rel="stylesheet" href="../css/style.css"/>
+</head>
+<body>
+<nav>
+  <a href="../index.html" class="nav-logo">🩸 Life<span>Flow</span></a>
+  <ul class="nav-links">
+    <li><a href="../index.html">Home</a></li>
+    <li><a href="inventory.html">Inventory</a></li>
+    <li><a href="donors.html">Donors</a></li>
+    <li><a href="requests.html">Requests</a></li>
+    <li><a href="hospitals.html">Hospitals</a></li>
+    <li><a href="reports.html">Reports</a></li>
+  </ul>
+  <button class="nav-hamburger"><span></span><span></span><span></span></button>
+  <a href="login.html" class="nav-cta" style="background:var(--mid)">← Logout</a>
+</nav>
+
+<div class="page-content">
+<div class="page-header">
+  <div class="section-label">Admin Panel</div>
+  <div class="section-title">Dashboard Overview</div>
+  <p class="section-sub">Welcome back, Admin. Here's a real-time overview of the blood bank.</p>
+</div>
+
+<section>
+  <div class="stats-row" id="dashStats"></div>
+
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:28px;margin-bottom:28px">
+    <!-- Recent Requests -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+        <h3 style="font-family:Syne,sans-serif;font-weight:700">Recent Blood Requests</h3>
+        <a href="requests.html" style="font-size:0.85rem;color:var(--red);text-decoration:none;font-weight:600">View All →</a>
+      </div>
+      <div id="recentRequests"></div>
+    </div>
+    <!-- Quick Actions -->
+    <div class="card">
+      <h3 style="font-family:Syne,sans-serif;font-weight:700;margin-bottom:18px">Quick Actions</h3>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <a href="inventory.html" class="btn-primary" style="text-align:center;border-radius:12px">🗄️ Manage Inventory</a>
+        <a href="donors.html" class="btn-outline" style="text-align:center;border-radius:12px">👤 View Donors</a>
+        <a href="requests.html" class="btn-outline" style="text-align:center;border-radius:12px">🚨 View Requests</a>
+        <a href="hospitals.html" class="btn-outline" style="text-align:center;border-radius:12px">🏥 View Hospitals</a>
+        <a href="reports.html" class="btn-outline" style="text-align:center;border-radius:12px">📊 Generate Report</a>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px">
+    <!-- Stock Levels -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+        <h3 style="font-family:Syne,sans-serif;font-weight:700">Stock Levels</h3>
+        <a href="inventory.html" style="font-size:0.85rem;color:var(--red);text-decoration:none;font-weight:600">Manage →</a>
+      </div>
+      <div id="dashStock"></div>
+    </div>
+    <!-- Critical Alerts -->
+    <div class="card">
+      <h3 style="font-family:Syne,sans-serif;font-weight:700;margin-bottom:18px">⚠️ Alerts</h3>
+      <div id="dashAlerts"></div>
+    </div>
+  </div>
+</section>
+</div>
+
+<footer>
+  <div class="footer-bottom" style="border-top:none;padding-top:0">
+    <p>© 2026 LifeFlow Blood Bank Management System</p><p>🩸</p>
+  </div>
+</footer>
+
+<script src="../js/main.js"></script>
+<script>
+function renderDashboard() {
+  const inv = DB.get('inventory');
+  const donors = DB.get('donors');
+  const requests = DB.get('requests');
+  const hospitals = DB.get('hospitals');
+
+  document.getElementById('dashStats').innerHTML = `
+    <div class="stat-box"><div class="snum">${inv.reduce((s,i)=>s+i.units,0)}</div><div class="slbl">Total Blood Units</div></div>
+    <div class="stat-box"><div class="snum">${donors.length}</div><div class="slbl">Total Donors</div></div>
+    <div class="stat-box"><div class="snum" style="color:var(--warning)">${requests.filter(r=>r.status==='Pending').length}</div><div class="slbl">Pending Requests</div></div>
+    <div class="stat-box"><div class="snum" style="color:var(--red)">${requests.filter(r=>r.priority==='Emergency'&&r.status==='Pending').length}</div><div class="slbl">Emergencies</div></div>
+    <div class="stat-box"><div class="snum">${hospitals.filter(h=>h.status==='Active').length}</div><div class="slbl">Active Hospitals</div></div>
+  `;
+
+  const sc = { Pending:'badge-low', Approved:'badge-avail', Dispatched:'badge-blue', Rejected:'badge-crit' };
+  const recentReqs = [...requests].reverse().slice(0,5);
+  document.getElementById('recentRequests').innerHTML = recentReqs.map(r=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)">
+      <div>
+        <div style="font-weight:600;font-size:0.9rem">${r.hospital}</div>
+        <div style="font-size:0.78rem;color:var(--muted)">${r.blood} · ${r.units} units · ${formatDate(r.date)}</div>
+      </div>
+      <span class="badge ${sc[r.status]}">${r.status}</span>
+    </div>`).join('') || '<p style="color:var(--muted)">No requests yet</p>';
+
+  const colors = { Available:'#27ae60', Low:'#e67e22', Critical:'#c0392b' };
+  const maxUnits = Math.max(...inv.map(i=>i.units));
+  document.getElementById('dashStock').innerHTML = inv.map(i=>`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <div style="width:36px;font-family:Syne,sans-serif;font-weight:700;font-size:0.9rem">${i.type}</div>
+      <div style="flex:1">
+        <div class="progress-bar" style="height:8px">
+          <div style="height:100%;width:${Math.round(i.units/maxUnits*100)}%;background:${colors[i.status]};border-radius:50px"></div>
+        </div>
+      </div>
+      <div style="width:40px;text-align:right;font-size:0.85rem;font-weight:600">${i.units}</div>
+    </div>`).join('');
+
+  const criticals = [
+    ...inv.filter(i=>i.status==='Critical').map(i=>`🔴 <strong>${i.type}</strong> — Only ${i.units} units left`),
+    ...inv.filter(i=>i.status==='Low').map(i=>`🟡 <strong>${i.type}</strong> — Low stock: ${i.units} units`),
+    ...inv.filter(i=>daysUntil(i.expiry)<=7).map(i=>`⏰ <strong>${i.type}</strong> — Expires in ${daysUntil(i.expiry)} days`),
+    ...requests.filter(r=>r.priority==='Emergency'&&r.status==='Pending').map(r=>`🚨 Emergency request from <strong>${r.hospital}</strong>`)
+  ];
+  document.getElementById('dashAlerts').innerHTML = criticals.length
+    ? criticals.map(a=>`<div style="padding:11px;border-radius:10px;background:rgba(192,57,43,0.07);border-left:3px solid var(--red);margin-bottom:8px;font-size:0.86rem">${a}</div>`).join('')
+    : '<p style="color:var(--success);font-weight:600">✅ All systems normal</p>';
+}
+
+renderDashboard();
+</script>
+</body>
+</html>
